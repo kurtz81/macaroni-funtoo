@@ -1,0 +1,10 @@
+name: rtw89
+version: 0.20220901
+category: kernel-6.1
+annotations:
+  kernel_module: true
+description: Driver for Realtek 8852AE, an 802.11ax device,
+labels:
+  kernel.suffix: macaroni
+  kernel.type: vanilla
+  kernel.version: 6.1.104

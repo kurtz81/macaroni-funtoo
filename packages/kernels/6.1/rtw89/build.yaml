@@ -1,0 +1,39 @@
+requires:
+  - name: "kernel"
+    category: "seed-6.1"
+    version: ">=0"
+package_dir: /{{ .Values.name }}
+excludes:
+- /lib/modules/*-macaroni/kernel/drivers/net/wireless/realtek/rtw89/rtw89_8852a.ko.zst
+- /lib/modules/*-macaroni/kernel/drivers/net/wireless/realtek/rtw89/rtw89_8852ae.ko.zst
+env:
+- KVER={{ ( index .Values.labels "kernel.version" ) }}-{{ ( index .Values.labels "kernel.suffix" ) }}
+- GIT_HASH=78a73b0ffa15111c3021fcc8c4b6d2605fc16d88
+prelude:
+# macaroni-lts-full installs modules.order and modules.builtin
+- >-
+  luet i kernel-6.1/macaroni-lts-full kernel-6.1/macaroni-lts-modules --nodeps --finalizer-env "BUILD_ISO=1" &&
+  luet i git make sys-apps/kmod &&
+  luet cleanup
+- >-
+  ln -s
+  /usr/src/linux-{{ ( index .Values.labels "kernel.version" ) }}-{{ ( index .Values.labels "kernel.suffix" ) }}
+  /lib/modules/{{ ( index .Values.labels "kernel.version" ) }}-{{ ( index .Values.labels "kernel.suffix" ) }}/build
+- >-
+  git clone https://github.com/lwfinger/rtw89.git &&
+  cd {{ .Values.name }} &&
+  git checkout "${GIT_HASH%\+*}" &&
+  make
+steps:
+- >-
+  cd {{ .Values.name }} &&
+  sed -e 's|^MODDESTDIR.*|MODDESTDIR := /{{ .Values.name }}/lib/modules/{{ ( index .Values.labels "kernel.version" ) }}-macaroni/kernel/drivers/net/wireless/realtek/rtw89/|g' -i Makefile &&
+  make install
+
+# It seems that the compression is not handled correct from the ebuild
+# I run manually compression for every module
+- >-
+  for i in /{{ .Values.name }}/lib/modules/{{ ( index .Values.labels "kernel.version" ) }}-macaroni/kernel/drivers/net/wireless/realtek/rtw89/*.ko ; do
+  xz -z ${i} ;
+  done
+
